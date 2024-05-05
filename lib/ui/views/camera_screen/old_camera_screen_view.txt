@@ -1,0 +1,122 @@
+// import 'package:flutter/material.dart';
+// import 'package:flutter/widgets.dart';
+// import 'package:stacked/stacked.dart';
+// import 'camera_screen_viewmodel.dart';
+// import 'package:camera/camera.dart';
+// import 'package:provider/provider.dart'; // Use provider for state management
+// import 'package:Fabric_Detective/ui/common/chi_router.dart';
+// import 'package:Fabric_Detective/ui/views/display_image_screen/display_image_screen_view.dart';
+
+// class CameraScreenView extends StatelessWidget {
+//   const CameraScreenView({Key? key}) : super(key: key);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return ViewModelBuilder<CameraScreenViewModel>.reactive(
+//       viewModelBuilder: () => CameraScreenViewModel(),
+//       onModelReady: (model) async => await model.initializeCamera(),
+//       builder: (context, viewModel, child) => Scaffold(
+//         backgroundColor: Theme.of(context).colorScheme.background,
+//         body: Stack( // Use Stack to position elements on top of each other
+//           alignment: Alignment.bottomCenter, // Align content to bottom center
+//           children: [
+//             Center(
+//               child: viewModel.cameraController != null &&
+//                       viewModel.cameraController!.value.isInitialized
+//                   ? CameraPreview(viewModel.cameraController!)
+//                   : CircularProgressIndicator(),
+//             ),
+//             Padding(
+//               padding: const EdgeInsets.all(16.0), // Add some padding
+//               child: ElevatedButton(
+//                 onPressed: () => viewModel.startDetection(), // Call startDetection on tap
+//                 child: Text('Start Detecting'),
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:stacked/stacked.dart';
+import 'camera_screen_viewmodel.dart';
+import 'package:camera/camera.dart';
+import 'package:provider/provider.dart'; // Use provider for state management
+import 'package:Fabric_Detective/ui/common/chi_router.dart';
+import 'package:Fabric_Detective/ui/views/display_image_screen/display_image_screen_view.dart';
+
+class CameraScreenView extends StackedView<CameraScreenViewModel> {
+  const CameraScreenView({Key? key}) : super(key: key);
+
+  @override
+  Widget builder(
+      BuildContext context, CameraScreenViewModel viewModel, Widget? child) {
+    return Scaffold(
+      body: Stack(
+        // Use Stack to position elements
+        children: [
+          // Camera preview widget
+          Selector<CameraScreenViewModel, bool>(
+            selector: (context, viewModel) =>
+                viewModel.cameraController?.value.isInitialized ?? false,
+            builder: (context, isCameraReady, child) {
+              // return isCameraReady
+              //     ? CameraPreview(Provider.of<CameraScreenViewModel>(context)
+              //         .cameraController!)
+              //     : Center(child: CircularProgressIndicator());
+              return isCameraReady
+                  ? CameraPreview(viewModel.cameraController!)
+                  : Center(child: CircularProgressIndicator());
+            },
+          ),
+
+          // Button visibility based on detection state
+          Selector<CameraScreenViewModel, DetectionState>(
+            selector: (context, viewModel) => viewModel.detectionState,
+            builder: (context, detectionState, child) {
+              if (detectionState == DetectionState.stopped) {
+                return Center(
+                  child: ElevatedButton(
+                    // onPressed: () => Provider.of<CameraScreenViewModel>(context)
+                    //     .startDetection(),
+                    onPressed: () => viewModel.startDetection(),
+                    child: Text('Start Detecting'),
+                  ),
+                );
+              } else {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => viewModel.stopDetection(),
+                      // Provider.of<CameraScreenViewModel>(context)
+                      //     .stopDetection(),
+                      child: Text('Stop Detecting'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () =>
+                          viewModel.takePictureWithDetection(context),
+                      // Provider.of<CameraScreenViewModel>(context)
+                      //     .takePictureWithDetection(context),
+                      child: Text('Take Picture'),
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  CameraScreenViewModel viewModelBuilder(
+    BuildContext context,
+  ) =>
+      CameraScreenViewModel();
+}

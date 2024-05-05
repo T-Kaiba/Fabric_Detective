@@ -1,0 +1,125 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // For device orientation
+import 'package:file/file.dart'; // Import the File class
+import 'display_image_screen_viewmodel.dart';
+import 'package:provider/provider.dart'; // Use provider for state management
+import 'package:image/image.dart' as img; // Import decodeImage
+import 'package:Fabric_Detective/ui/common/chi_router.dart';
+import 'package:Fabric_Detective/ui/views/camera_screen/camera_screen_view.dart';
+
+
+class DisplayImageView extends StatelessWidget {
+  const DisplayImageView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = Provider.of<DisplayImageViewModel>(context);
+    final imageFile = File(viewModel.imagePath); // Create a File object
+
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Captured Image'),
+      ),
+      body: Stack(
+        children: [
+          FutureBuilder<img.Image>(
+            future: img.decodeImageFromPath(imageFile.path),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Center(child: Image.memory(snapshot.data!.getBytes()));
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error loading image'));
+              } else {
+                return Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+          // Draw bounding boxes on top of the image (implement drawBoundingBoxes function)
+          Positioned.fill(
+            child: Stack(
+              children: drawBoundingBoxes(context, boxes),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton(
+            onPressed: () {
+              // Navigate back to Camera Screen (replace with your navigation logic)
+              Navigator.pop(context); // Close this page
+            },
+            child: Text('Start Detecting'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Implement functionality for Back to Home Page button (replace with your navigation)
+              Navigator.popUntil(context, ModalRoute.withName('/')); // Pop all screens until home
+            },
+            child: Text('Back to Home Page'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Function to draw bounding boxes on the image (modify based on your code)
+  List<Widget> drawBoundingBoxes(BuildContext context, List<dynamic> boxes) {
+    List<Widget> boundingBoxes = [];
+    final screenSize = MediaQuery.of(context).size;
+
+    for (var box in boxes) {
+      // Extract coordinates and class ID (modify based on your data structure)
+      final double x1 = box[0].toDouble();
+      final double y1 = box[1].toDouble();
+      final double x2 = box[2].toDouble();
+      final double y2 = box[3].toDouble();
+      final String classId = box[4];
+
+      // Calculate box dimensions
+      final double boxWidth = x2 - x1;
+      final double boxHeight = y2 - y1;
+
+      // Define a container for the bounding box
+      boundingBoxes.add(
+        Positioned(
+          top: y1,
+          left: x1,
+          width: boxWidth,
+          height: boxHeight,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.red, // Replace with your color logic
+                width: 2.0,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Optional: Add transparency to the box
+                Container(color: Colors.red.withOpacity(0.2)),
+
+                // Text widget for class ID on top-left corner
+                Positioned(
+                  top: 5.0,
+                  left: 5.0,
+                  child: Text(
+                    classId,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return boundingBoxes;
+  }
+}
